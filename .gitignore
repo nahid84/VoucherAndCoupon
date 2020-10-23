@@ -1,0 +1,32 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.config
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+MiddlewareLogs/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+packages/
+publish/
+
+!web.config
+!web.*.config
+!packages.config
+
+

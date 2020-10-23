@@ -1,0 +1,17 @@
+[
+  {
+    "Id": "e10422f7-3892-4fd7-9529-3b67d6bb9999",
+    "Type": "Bronz",
+    "Discount": 5
+  },
+  {
+    "Id": "e10422f7-3892-4fd7-9529-3b67d6bb8888",
+    "Type": "Gold",
+    "Discount": 10
+  },
+  {
+    "Id": "e10422f7-3892-4fd7-9529-3b67d6bb7777",
+    "Type": "Diamond",
+    "Discount": 15
+  }
+]
