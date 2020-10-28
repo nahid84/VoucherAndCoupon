@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 
 namespace Dominos.OLO.Vouchers.Models
 {
@@ -11,5 +13,8 @@ namespace Dominos.OLO.Vouchers.Models
         public double Price { get; set; }
 
         public string ProductCodes { get; set; }
+
+        [JsonIgnore]
+        public IList<string> ProductCodeList => ProductCodes.Split(',');
     }
 }

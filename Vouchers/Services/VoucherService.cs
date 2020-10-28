@@ -1,28 +1,36 @@
 ﻿using Dominos.OLO.Vouchers.Models;
-using Dominos.OLO.Vouchers.Repository;
+using Dominos.OLO.Vouchers.Repository.Interfaces;
+using Dominos.OLO.Vouchers.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Dominos.OLO.Vouchers.Services
 {
-    public class VoucherService
+    public class VoucherService : IVoucherService
     {
-        private VoucherRepository _voucherRepository;
-        private CouponService _couponService;
+        private readonly IVoucherRepository _voucherRepo;
+        private readonly ICouponService _couponSvc;
 
-        public IEnumerable<Voucher> Get(int count)
+        public VoucherService(IVoucherRepository voucherRepo,
+                              ICouponService couponSvc)
         {
-            var vouchers = VoucherRepo.GetVouchers();
+            _voucherRepo = voucherRepo;
+            _couponSvc = couponSvc;
+        }
 
-            return vouchers.Take(count == 0 ? vouchers.Length : 0);
+        public IEnumerable<Voucher> Get(int count = 0)
+        {
+            var vouchers = _voucherRepo.GetVouchers();
+
+            return vouchers.Take(count == 0 ? vouchers.Length : count);
         }
 
         public IEnumerable<Voucher> GetWithDiscount(Guid couponId, int count)
         {
             var vouchers = Get(count);
 
-            double discount = CouponSvc.GetDiscount(couponId);
+            double discount = _couponSvc.GetDiscount(couponId);
 
             return vouchers.Select(x =>
             {
@@ -35,9 +43,9 @@ namespace Dominos.OLO.Vouchers.Services
 
         public Voucher GetVoucherById(Guid id)
         {
-            var voucher = VoucherRepo.GetVouchers()
-                                     .Where(x => x.Id.Equals(id))
-                                     .FirstOrDefault();
+            var voucher = _voucherRepo.GetVouchers()
+                                      .Where(x => x.Id.Equals(id))
+                                      .FirstOrDefault();
 
             return voucher;
         }
@@ -46,35 +54,38 @@ namespace Dominos.OLO.Vouchers.Services
         {
             var voucher = GetVoucherById(id);
 
-            double discount = CouponSvc.GetDiscount(couponId);
+            double discount = _couponSvc.GetDiscount(couponId);
 
             if (voucher.Price > discount) voucher.Price -= discount;
 
             return voucher;
         }
 
-        internal VoucherRepository VoucherRepo
+        public Voucher[] GetVouchersByName(string name)
         {
-            get
-            {
-                return _voucherRepository ?? (_voucherRepository = new VoucherRepository());
-            }
-            set
-            {
-                _voucherRepository = value;
-            }
+            var vouchers = _voucherRepo.GetVouchers()
+                                       .Where(x => x.Name.Equals(name))
+                                       .ToArray();
+
+            return vouchers;
         }
 
-        internal CouponService CouponSvc
+        public Voucher[] GetVouchersByNameSearch(string name)
         {
-            get
-            {
-                return _couponService ?? (_couponService = new CouponService());
-            }
-            set
-            {
-                _couponService = value;
-            }
+            var vouchers = _voucherRepo.GetVouchers()
+                                      .Where(x => x.Name.Contains(name))
+                                      .ToArray();
+
+            return vouchers;
+        }
+
+        public Voucher GetCheapestVoucherByProductCode(IList<string> productCodes)
+        {
+            var vouchers = _voucherRepo.GetVouchers()
+                                       .Where(x => x.ProductCodeList.Intersect(productCodes).Any())
+                                       .OrderBy(x => x.Price);
+
+            return vouchers.FirstOrDefault();
         }
     }
 }

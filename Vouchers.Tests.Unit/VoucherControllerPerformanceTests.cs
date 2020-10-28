@@ -1,4 +1,8 @@
 ﻿using Dominos.OLO.Vouchers.Controllers;
+using Dominos.OLO.Vouchers.Repository;
+using Dominos.OLO.Vouchers.Repository.Interfaces;
+using Dominos.OLO.Vouchers.Services;
+using Dominos.OLO.Vouchers.Services.Interfaces;
 using NUnit.Framework;
 using System;
 
@@ -7,15 +11,22 @@ namespace Dominos.OLO.Vouchers.Tests.Unit
     [TestFixture]
     public class VoucherControllerPerformanceTests
     {
-        private readonly VoucherController _controller = new VoucherController();
+        private VoucherController _controller;
 
         [SetUp]
         public void Setup()
         {
-            var repository = _controller.VoucherRepo;
-            repository.DataFilename = $"{AppDomain.CurrentDomain.BaseDirectory}\\..\\..\\..\\Vouchers\\data.json";
-            // This is to pre-load the vouchers.
-            repository.GetVouchers();
+            IVoucherRepository voucherRepository = new VoucherRepository($"{AppDomain.CurrentDomain.BaseDirectory}\\..\\..\\..\\Vouchers\\data.json");
+            voucherRepository.GetVouchers(); // Just to pre-load vouchers
+
+            ICouponRepository couponRepository = new CouponRepository($"{AppDomain.CurrentDomain.BaseDirectory}\\..\\..\\..\\Vouchers\\coupon-data.json");
+            couponRepository.GetCoupons(); // Just to pre-load coupons
+
+            ICouponService couponService = new CouponService(couponRepository);
+
+            IVoucherService voucherService = new VoucherService(voucherRepository, couponService);
+
+            _controller = new VoucherController(voucherService);
         }
 
         [Test]

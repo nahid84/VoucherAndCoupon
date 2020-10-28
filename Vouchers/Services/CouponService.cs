@@ -1,18 +1,24 @@
 ﻿using Dominos.OLO.Vouchers.Models;
-using Dominos.OLO.Vouchers.Repository;
+using Dominos.OLO.Vouchers.Repository.Interfaces;
+using Dominos.OLO.Vouchers.Services.Interfaces;
 using System;
 using System.Linq;
 
 namespace Dominos.OLO.Vouchers.Services
 {
-    public class CouponService
+    public class CouponService : ICouponService
     {
-        private CouponRepository _couponRepository;
+        private ICouponRepository _couponRepository;
+
+        public CouponService(ICouponRepository couponRepository)
+        {
+            _couponRepository = couponRepository;
+        }
 
         public double GetDiscount(Guid id)
         {
-            var coupon = Repository.GetCoupons()
-                                   .FirstOrDefault(x=> x.Id.Equals(id));
+            var coupon = _couponRepository.GetCoupons()
+                                          .FirstOrDefault(x=> x.Id.Equals(id));
 
             if (coupon == null) return 0;
 
@@ -21,25 +27,13 @@ namespace Dominos.OLO.Vouchers.Services
 
         public Coupon[] GetCoupons()
         {
-            return Repository.GetCoupons();
+            return _couponRepository.GetCoupons();
         }
 
         public Coupon GetCoupon(Guid id)
         {
-            return Repository.GetCoupons()
-                             .FirstOrDefault(x => x.Id.Equals(id));
-        }
-
-        internal CouponRepository Repository
-        {
-            get
-            {
-                return _couponRepository ?? (_couponRepository = new CouponRepository());
-            }
-            set
-            {
-                _couponRepository = value;
-            }
+            return _couponRepository.GetCoupons()
+                                    .FirstOrDefault(x => x.Id.Equals(id));
         }
     }
 }

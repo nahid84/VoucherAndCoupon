@@ -1,6 +1,5 @@
 ﻿using Dominos.OLO.Vouchers.Models;
-using Dominos.OLO.Vouchers.Repository;
-using Dominos.OLO.Vouchers.Services;
+using Dominos.OLO.Vouchers.Services.Interfaces;
 using System;
 using System.Linq;
 using System.Web.Http;
@@ -10,117 +9,72 @@ namespace Dominos.OLO.Vouchers.Controllers
     [RoutePrefix("voucher")]
     public class VoucherController : ApiController
     {
-        private VoucherRepository _voucherRepository;
-        private CouponService _couponService;
+        private const char PRODUCT_LIST_SEPERATOR = ',';
 
-        [HttpGet]
-        [Route("{count}")]
-        public Voucher[] Get(int count = 0)
+        private readonly IVoucherService _voucherService;
+
+        public VoucherController(IVoucherService voucherService)
         {
-            var vouchers = VoucherRepo.GetVouchers();
-
-            return vouchers.Take(count == 0 ? vouchers.Length : count)
-                           .ToArray();
+            _voucherService = voucherService;
         }
 
         [HttpGet]
-        [Route("{count}/coupon/{couponId}")]
+        [Route("")]
+        public Voucher[] Get(int count = 0)
+        {
+            return _voucherService.Get(count).ToArray();
+        }
+
+        [HttpGet]
+        [Route("")]
         public Voucher[] GetWithDiscount(Guid couponId, int count = 0)
         {
-            var vouchers = Get(count);
-
-            double discount = CouponSvc.GetDiscount(couponId);
-
-            return vouchers.Select(x =>
-            {
-                if (x.Price > discount)
-                    x.Price -= discount;
-
-                return x;
-
-            }).ToArray();
+            return _voucherService.GetWithDiscount(couponId, count).ToArray();
         }
 
         [HttpGet]
         [Route("{id}")]
-        public Voucher GetVoucherById(Guid id)
+        public IHttpActionResult GetVoucherById(Guid id)
         {
-            var voucher = VoucherRepo.GetVouchers()
-                                     .Where(x => x.Id.Equals(id))
-                                     .FirstOrDefault();
+            var result = _voucherService.GetVoucherById(id);
 
-            return voucher;
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
         }
 
         [HttpGet]
-        [Route("{id}/coupon/{couponId}")]
-        public Voucher GetVoucherByIdWithDiscount(Guid id, Guid couponId)
+        [Route("{id}")]
+        public IHttpActionResult GetVoucherByIdWithDiscount(Guid id, Guid couponId)
         {
-            var voucher = GetVoucherById(id);
+            var result = _voucherService.GetVoucherByIdWithDiscount(id, couponId);
 
-            double discount = CouponSvc.GetDiscount(couponId);
+            if (result == null)
+                return NotFound();
 
-            if (voucher.Price > discount) voucher.Price -= discount;
-
-            return voucher;
+            return Ok(result);
         }
 
         [HttpGet]
-        [Route("title/{name}")]
+        [Route("")]
         public Voucher[] GetVouchersByName(string name)
         {
-            var vouchers = VoucherRepo.GetVouchers()
-                                      .Where(x => x.Name.Equals(name))
-                                      .ToArray();
-
-            return vouchers;
+            return _voucherService.GetVouchersByName(name);
         }
 
         [HttpGet]
         [Route("search/{name}")]
         public Voucher[] GetVouchersByNameSearch(string name)
         {
-            var vouchers = VoucherRepo.GetVouchers()
-                                      .Where(x => x.Name.Contains(name))
-                                      .ToArray();
-
-            return vouchers;
+            return _voucherService.GetVouchersByNameSearch(name);
         }
 
         [HttpGet]
-        [Route("cheapest/{productCode}")]
+        [Route("")]
         public Voucher GetCheapestVoucherByProductCode(string productCode)
         {
-            var voucher = VoucherRepo.GetVouchers()
-                                      .Where(x => x.ProductCodes.Contains(productCode))
-                                      .OrderBy(x => x.Price)
-                                      .FirstOrDefault();
-
-            return voucher;
-        }
-
-        internal VoucherRepository VoucherRepo
-        {
-            get
-            {
-                return _voucherRepository ?? (_voucherRepository = new VoucherRepository());
-            }
-            set
-            {
-                _voucherRepository = value;
-            }
-        }
-
-        internal CouponService CouponSvc
-        {
-            get
-            {
-                return _couponService ?? (_couponService = new CouponService());
-            }
-            set
-            {
-                _couponService = value;
-            }
+            return _voucherService.GetCheapestVoucherByProductCode(productCode.Split(PRODUCT_LIST_SEPERATOR));
         }
     }
 }

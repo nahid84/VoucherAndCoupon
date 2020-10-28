@@ -1,89 +1,89 @@
-﻿using System;
-using System.Collections.Generic;
-using Dominos.OLO.Vouchers.Controllers;
+﻿using Dominos.OLO.Vouchers.Controllers;
 using Dominos.OLO.Vouchers.Models;
-using Dominos.OLO.Vouchers.Repository;
-using NSubstitute;
+using Dominos.OLO.Vouchers.Services.Interfaces;
+using Moq;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Http;
+using System.Web.Http.Results;
 
 namespace Dominos.OLO.Vouchers.Tests.Unit
 {
     [TestFixture]
     public class VoucherControllerTests
     {
-        private readonly VoucherController _controller = new VoucherController();
-
-        private readonly VoucherRepository _repository = Substitute.For<VoucherRepository>();
-
-        private readonly List<Voucher> _vouchers = new List<Voucher>();
+        private readonly Mock<IVoucherService> mockedVoucherService = new Mock<IVoucherService>();
+        private VoucherController _controller;
 
         [SetUp]
         public void Setup()
         {
-            _repository.GetVouchers().Returns(info => _vouchers.ToArray());
-            _controller.VoucherRepo = _repository;
+            _controller = new VoucherController(mockedVoucherService.Object);
         }
 
-        [Test, Order(3)]
+        private Voucher[] Prepare1000Vouchers()
+        {
+            IList<Voucher> vouchers = new List<Voucher>();
+
+            for (var i = 0; i < 1000; i++)
+            {
+                vouchers.Add(new Voucher
+                {
+                    Id = new Guid()
+                });
+            }
+
+            return vouchers.ToArray();
+        }
+
+        [Test]
         public void Get_ShouldReturnRequestedNumberOfVouchers()
         {
-            for (var i = 0; i < 1000; i++)
-            {
-                _vouchers.Add(new Voucher
-                {
-                    Id = new Guid()
-                });
-            }
+            int count = 100;
 
-            var result = _controller.Get(100);
+            mockedVoucherService.Setup(x => x.Get(count))
+                                .Returns(Prepare1000Vouchers().Take(count));
 
-            Assert.AreEqual(100, result.Length);
+            var result = _controller.Get(count);
+
+            Assert.AreEqual(count, result.Count());
         }
 
-        [Test, Order(3)]
-        public void Get_ShouldReturnAllVouchersByDefault()
+        [Test]
+        public void Get_ShouldReturnRequestedVoucherById()
         {
-            for (var i = 0; i < 1000; i++)
-            {
-                _vouchers.Add(new Voucher
-                {
-                    Id = new Guid()
-                });
-            }
-
-            var result = _controller.Get();
-
-            Assert.AreEqual(_vouchers.Count, result.Length);
-        }
-
-        [Test, Order(1)]
-        public void GetVouchersByName_ShouldReturnAllVouchersWithTheGivenName()
-        {
-            var a1Voucher = new Voucher { Id = new Guid(), Name = "A" };
+            Guid a_Id = new Guid();
+            var a1Voucher = new Voucher { Id = a_Id, Name = "A" };
             var a2Voucher = new Voucher { Id = new Guid(), Name = "A" };
             var b1Voucher = new Voucher { Id = new Guid(), Name = "B" };
 
-            _vouchers.Add(a1Voucher);
-            _vouchers.Add(a2Voucher);
-            _vouchers.Add(b1Voucher);
+            IList<Voucher> vouchers = new List<Voucher>
+            {
+                    a1Voucher,a2Voucher,b1Voucher
+            };
 
-            var result = _controller.GetVouchersByName("A");
-            Assert.AreEqual(new[] { a1Voucher, a2Voucher }, result);
+            mockedVoucherService.Setup(x => x.GetVoucherById(a_Id))
+                                .Returns(vouchers.First(x=> x.Id == a_Id));
+
+            var result = _controller.GetVoucherById(a_Id);
+
+            Assert.IsInstanceOf<OkNegotiatedContentResult<Voucher>>(result);
+            Assert.AreEqual((result as OkNegotiatedContentResult<Voucher>).Content.Id, a_Id);
+
         }
 
-        [Test, Order(2)]
-        public void GetVouchersByNameSearch_ShouldReturnAllVouchersWhichMatchTheSearch()
+        [Test]
+        public void Get_ShouldReturnNotFoundWhenVoucherNotExists()
         {
-            var a1Voucher = new Voucher { Id = new Guid(), Name = "ABC" };
-            var a2Voucher = new Voucher { Id = new Guid(), Name = "ABCD" };
-            var b1Voucher = new Voucher { Id = new Guid(), Name = "ACD" };
+            Guid a_Id = new Guid();
 
-            _vouchers.Add(a1Voucher);
-            _vouchers.Add(a2Voucher);
-            _vouchers.Add(b1Voucher);
+            mockedVoucherService.Setup(x => x.GetVoucherById(a_Id));
 
-            var result = _controller.GetVouchersByNameSearch("BC");
-            Assert.AreEqual(new[] { a1Voucher, a2Voucher }, result);
+            var result = _controller.GetVoucherById(a_Id);
+
+            Assert.IsInstanceOf<NotFoundResult>(result);
         }
     }
 }

@@ -1,22 +1,31 @@
-﻿using System;
-using System.IO;
-using Dominos.OLO.Vouchers.Models;
+﻿using Dominos.OLO.Vouchers.Models;
+using Dominos.OLO.Vouchers.Repository.Interfaces;
 using Newtonsoft.Json;
+using System;
+using System.IO;
 
 namespace Dominos.OLO.Vouchers.Repository
 {
-    public class CouponRepository
+    public class CouponRepository : ICouponRepository
     {
-        internal string DataFilename = $"{AppDomain.CurrentDomain.BaseDirectory}coupon-data.json";
-
+        private readonly string _dataFilename;
         private Coupon[] _coupons;
 
-        public virtual Coupon[] GetCoupons()
+        public CouponRepository(string dataFilename)
+        {
+            _dataFilename = dataFilename;
+        }
+
+        public Coupon[] GetCoupons()
         {
             if (_coupons == null)
             {
-                var text = File.ReadAllText(DataFilename);
-                _coupons = JsonConvert.DeserializeObject<Coupon[]>(text);
+                try
+                {
+                    var text = File.ReadAllText(_dataFilename);
+                    _coupons = JsonConvert.DeserializeObject<Coupon[]>(text);
+                }
+                catch (Exception) { }
             }
             return _coupons;
         }
